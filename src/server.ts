@@ -3,12 +3,6 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 
-import { fileURLToPath } from 'url';
-import path, { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 interface Point {
   x: number;
   y: number;
@@ -239,7 +233,7 @@ io.on('connection', (socket) => {
 app.use(express.static('public'));
 
 // server client built files
-app.use(express.static(path.join(__dirname, "..", "dist")))
+app.use(express.static("dist"));
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

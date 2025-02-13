@@ -2,6 +2,7 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
 
 interface Point {
   x: number;
@@ -231,6 +232,9 @@ io.on('connection', (socket) => {
 
 // Optionally serve static files.
 app.use(express.static('public'));
+
+// server client built files
+app.use(express.static(path.join(__dirname, "..", "dist")))
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

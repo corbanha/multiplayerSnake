@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import SnakeGame from './SnakeGame';
+import React from 'react';
 import MultiplayerSnakeGame from './MultiplayerSnakeGame';
 
 const App: React.FC = () => {

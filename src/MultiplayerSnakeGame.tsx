@@ -31,7 +31,7 @@ const MultiplayerSnakeGame: React.FC = () => {
 
   // Connect to the Socket.IO server.
   useEffect(() => {
-    const newSocket = io('http://localhost:3001'); // Adjust the URL/port as needed.
+    const newSocket = io(`http://localhost:${process.env.PORT || "3001"}`);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {

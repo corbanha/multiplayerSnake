@@ -31,7 +31,7 @@ const MultiplayerSnakeGame: React.FC = () => {
 
   // Connect to the Socket.IO server.
   useEffect(() => {
-    const newSocket = io(`${process.env.domain || "https://mentalkoolaid.com:8080"}`);
+    const newSocket = io(`${process.env.domain || "http://mentalkoolaid.com:8080"}`);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {

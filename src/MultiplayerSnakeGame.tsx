@@ -34,7 +34,7 @@ const MultiplayerSnakeGame: React.FC = () => {
     console.log("Connecting to server!")
     const newSocket = io(
       process.env.SERVER_PORT
-        ? `https://squid-app-c7598.ondigitalocean.app`
+        ? `https://mentalkoolaid.com`
         : "http://localhost:3001"
     );
     setSocket(newSocket);

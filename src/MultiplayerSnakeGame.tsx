@@ -31,7 +31,7 @@ const MultiplayerSnakeGame: React.FC = () => {
 
   // Connect to the Socket.IO server.
   useEffect(() => {
-    const newSocket = io(`${process.env.domain || "http://mentalkoolaid.com:8080"}`);
+    const newSocket = io(process.env.SERVER_PORT ? `https://mentalkoolaid.com:${process.env.SERVER_PORT}` : 'http://localhost:3001');
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
@@ -120,7 +120,7 @@ const MultiplayerSnakeGame: React.FC = () => {
           top: 10,
           left: '50%',
           transform: 'translateX(-50%)',
-          color: 'white',
+          color: gameState && myId && gameState.players[myId] ? gameState.players[myId].color : 'white',
           zIndex: 1,
           fontSize: '24px'
         }}

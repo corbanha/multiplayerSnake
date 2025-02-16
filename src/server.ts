@@ -95,8 +95,17 @@ const createSnake = (start: Point, direction: Direction): Point[] => {
 
 // Spawn a new fruit at a random location.
 const spawnFruit = () => {
+  // if more than 20 fruits on the board, don't spawn more
+  if(fruits.length >= 20) return;
+
   const pos = getRandomPosition();
   fruits.push(pos);
+
+  // make sure there are at least the number of fruits as players
+  while (fruits.length < Object.keys(players).length) {
+    const pos = getRandomPosition();
+    fruits.push(pos);
+  }
 };
 
 // Initially spawn several fruits.
@@ -176,7 +185,7 @@ setInterval(() => {
       const spawnPos = getSafeSpawnPosition();
       player.direction = 'RIGHT';
       player.snake = createSnake(spawnPos, player.direction);
-      // (Score is maintained across respawns.)
+      player.score = 0;
       continue;
     }
 
@@ -235,7 +244,7 @@ app.use(express.static('public'));
 // server client built files
 app.use(express.static("dist"));
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.SERVER_PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

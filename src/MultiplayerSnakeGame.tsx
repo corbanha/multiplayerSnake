@@ -34,10 +34,7 @@ const MultiplayerSnakeGame: React.FC = () => {
     const newSocket = io(
       process.env.SERVER_PORT
         ? `https://mentalkoolaid.com:${process.env.SERVER_PORT}`
-        : "http://localhost:3001",
-        {
-          transports: ["websocket"],
-        }
+        : "http://localhost:3001"
     );
     setSocket(newSocket);
 
@@ -46,8 +43,16 @@ const MultiplayerSnakeGame: React.FC = () => {
       setMyId(newSocket.id);
     });
 
+    newSocket.on("connect_error", (error: any) => {
+      console.error("Connection error:", error);
+    });
+
+    newSocket.on("disconnect", (reason: string) => {
+      console.warn("Disconnected from server:", reason);
+    });
+
     newSocket.on("error", (error: any) => {
-      console.error(error);
+      console.error("Socket error:", error);
     });
 
     newSocket.on("gameState", (state: GameState) => {

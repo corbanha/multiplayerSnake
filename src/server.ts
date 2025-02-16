@@ -23,7 +23,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://mentalkoolaid.com'],
+    origin: ['http://localhost:3000', 'https://mentalkoolaid.com', 'https://squid-app-c7598.ondigitalocean.app/'],
     credentials: true,
   },
 });

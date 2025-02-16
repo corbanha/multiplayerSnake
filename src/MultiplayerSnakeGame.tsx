@@ -1,6 +1,6 @@
 // MultiplayerSnakeGame.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import io, { Socket } from 'socket.io-client';
+import React, { useEffect, useRef, useState } from "react";
+import io, { Socket } from "socket.io-client";
 
 interface Point {
   x: number;
@@ -21,25 +21,36 @@ interface GameState {
   gridHeight: number;
 }
 
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 const MultiplayerSnakeGame: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [myId, setMyId] = useState<string>('');
+  const [myId, setMyId] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Connect to the Socket.IO server.
   useEffect(() => {
-    const newSocket = io(process.env.SERVER_PORT ? `https://mentalkoolaid.com:${process.env.SERVER_PORT}` : 'http://localhost:3001');
+    const newSocket = io(
+      process.env.SERVER_PORT
+        ? `https://mentalkoolaid.com:${process.env.SERVER_PORT}`
+        : "http://localhost:3001",
+        {
+          transports: ["websocket"],
+        }
+    );
     setSocket(newSocket);
 
-    newSocket.on('connect', () => {
-      if(!newSocket.id) return;
+    newSocket.on("connect", () => {
+      if (!newSocket.id) return;
       setMyId(newSocket.id);
     });
 
-    newSocket.on('gameState', (state: GameState) => {
+    newSocket.on("error", (error: any) => {
+      console.error(error);
+    });
+
+    newSocket.on("gameState", (state: GameState) => {
       setGameState(state);
     });
 
@@ -53,33 +64,36 @@ const MultiplayerSnakeGame: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!socket) return;
       let newDirection: Direction | null = null;
-      if (e.key === 'ArrowUp') newDirection = 'UP';
-      else if (e.key === 'ArrowDown') newDirection = 'DOWN';
-      else if (e.key === 'ArrowLeft') newDirection = 'LEFT';
-      else if (e.key === 'ArrowRight') newDirection = 'RIGHT';
+      if (e.key === "ArrowUp") newDirection = "UP";
+      else if (e.key === "ArrowDown") newDirection = "DOWN";
+      else if (e.key === "ArrowLeft") newDirection = "LEFT";
+      else if (e.key === "ArrowRight") newDirection = "RIGHT";
       if (newDirection) {
-        socket.emit('changeDirection', newDirection);
+        socket.emit("changeDirection", newDirection);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [socket]);
 
   // Make the canvas fill the entire window.
-  const [canvasSize, setCanvasSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [canvasSize, setCanvasSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
   useEffect(() => {
     const handleResize = () => {
       setCanvasSize({ width: window.innerWidth, height: window.innerHeight });
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Render the game state onto the canvas.
   useEffect(() => {
     if (!gameState || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Clear the canvas.
@@ -90,17 +104,27 @@ const MultiplayerSnakeGame: React.FC = () => {
     const cellHeight = canvasSize.height / gameState.gridHeight;
 
     // Draw all fruits.
-    ctx.fillStyle = 'red';
+    ctx.fillStyle = "red";
     for (const fruit of gameState.fruits) {
-      ctx.fillRect(fruit.x * cellWidth, fruit.y * cellHeight, cellWidth, cellHeight);
+      ctx.fillRect(
+        fruit.x * cellWidth,
+        fruit.y * cellHeight,
+        cellWidth,
+        cellHeight
+      );
     }
 
     // Draw all players’ snakes.
     for (const id in gameState.players) {
       const player = gameState.players[id];
       ctx.fillStyle = player.color;
-      player.snake.forEach(segment => {
-        ctx.fillRect(segment.x * cellWidth, segment.y * cellHeight, cellWidth, cellHeight);
+      player.snake.forEach((segment) => {
+        ctx.fillRect(
+          segment.x * cellWidth,
+          segment.y * cellHeight,
+          cellWidth,
+          cellHeight
+        );
       });
     }
   }, [gameState, canvasSize]);
@@ -116,13 +140,16 @@ const MultiplayerSnakeGame: React.FC = () => {
       {/* Display the score at the top center */}
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: 10,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          color: gameState && myId && gameState.players[myId] ? gameState.players[myId].color : 'white',
+          left: "50%",
+          transform: "translateX(-50%)",
+          color:
+            gameState && myId && gameState.players[myId]
+              ? gameState.players[myId].color
+              : "white",
           zIndex: 1,
-          fontSize: '24px'
+          fontSize: "24px",
         }}
       >
         Score: {myScore}
@@ -131,7 +158,7 @@ const MultiplayerSnakeGame: React.FC = () => {
         ref={canvasRef}
         width={canvasSize.width}
         height={canvasSize.height}
-        style={{ display: 'block', background: 'black' }}
+        style={{ display: "block", background: "black" }}
       />
     </div>
   );

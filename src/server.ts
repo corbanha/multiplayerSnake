@@ -2,6 +2,7 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import cors from 'cors';
 
 interface Point {
   x: number;
@@ -238,6 +239,8 @@ io.on('connection', (socket) => {
     delete players[socket.id];
   });
 });
+
+app.use(cors());
 
 // Optionally serve static files.
 app.use(express.static('public'));

@@ -33,7 +33,7 @@ const GRID_WIDTH = 96;
 const GRID_HEIGHT = 54;
 const INITIAL_SNAKE_LENGTH = 3;
 const TICK_RATE = 100; // in ms
-const INITIAL_FRUIT_COUNT = 10;
+const INITIAL_FRUIT_COUNT = 20;
 
 // --- Game State ---
 const players: Record<string, Player> = {};
@@ -97,8 +97,8 @@ const createSnake = (start: Point, direction: Direction): Point[] => {
 
 // Spawn a new fruit at a random location.
 const spawnFruit = () => {
-  // if more than 20 fruits on the board, don't spawn more
-  if(fruits.length >= 20) return;
+  // if too many fruits on the board, don't spawn more
+  if(fruits.length >= INITIAL_FRUIT_COUNT * 3) return;
 
   const pos = getRandomPosition();
   fruits.push(pos);

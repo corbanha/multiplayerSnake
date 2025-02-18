@@ -32,7 +32,7 @@ const io = new Server(server, {
 const GRID_WIDTH = 96;
 const GRID_HEIGHT = 54;
 const INITIAL_SNAKE_LENGTH = 3;
-const TICK_RATE = 150; // in ms
+const TICK_RATE = 100; // in ms
 const INITIAL_FRUIT_COUNT = 10;
 
 // --- Game State ---

@@ -136,7 +136,7 @@ const MultiplayerSnakeGame: React.FC = () => {
       );
     });
 
-    setBoardOpacity(isOverlapping ? 0.3 : 1);
+    setBoardOpacity(isOverlapping ? 0 : 1);
   }, [gameState, canvasSize, myId]);
 
   // Render the game state onto the canvas.

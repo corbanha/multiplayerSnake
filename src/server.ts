@@ -1,15 +1,15 @@
 // server.ts
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import cors from 'cors';
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import cors from "cors";
 
 interface Point {
   x: number;
   y: number;
 }
 
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 interface Player {
   id: string;
@@ -17,13 +17,18 @@ interface Player {
   direction: Direction;
   score: number;
   color: string;
+  directionQueue: Direction[];
 }
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://mentalkoolaid.com', 'https://squid-app-c7598.ondigitalocean.app/'],
+    origin: [
+      "http://localhost:3000",
+      "https://mentalkoolaid.com",
+      "https://squid-app-c7598.ondigitalocean.app/",
+    ],
     credentials: true,
   },
 });
@@ -43,14 +48,16 @@ const fruits: Point[] = [];
 const getRandomInt = (max: number) => Math.floor(Math.random() * max);
 const getRandomPosition = (): Point => ({
   x: getRandomInt(GRID_WIDTH),
-  y: getRandomInt(GRID_HEIGHT)
+  y: getRandomInt(GRID_HEIGHT),
 });
 
 // Checks if a given point is occupied by any snake.
 const isPositionOccupied = (pos: Point): boolean => {
   for (const id in players) {
     const player = players[id];
-    if (player.snake.some(segment => segment.x === pos.x && segment.y === pos.y)) {
+    if (
+      player.snake.some((segment) => segment.x === pos.x && segment.y === pos.y)
+    ) {
       return true;
     }
   }
@@ -76,16 +83,16 @@ const createSnake = (start: Point, direction: Direction): Point[] => {
   for (let i = 1; i < INITIAL_SNAKE_LENGTH; i++) {
     let newSegment: Point;
     switch (direction) {
-      case 'RIGHT':
+      case "RIGHT":
         newSegment = { x: start.x - i, y: start.y };
         break;
-      case 'LEFT':
+      case "LEFT":
         newSegment = { x: start.x + i, y: start.y };
         break;
-      case 'DOWN':
+      case "DOWN":
         newSegment = { x: start.x, y: start.y - i };
         break;
-      case 'UP':
+      case "UP":
       default:
         newSegment = { x: start.x, y: start.y + i };
         break;
@@ -98,7 +105,7 @@ const createSnake = (start: Point, direction: Direction): Point[] => {
 // Spawn a new fruit at a random location.
 const spawnFruit = () => {
   // if too many fruits on the board, don't spawn more
-  if(fruits.length >= INITIAL_FRUIT_COUNT * 3) return;
+  if (fruits.length >= INITIAL_FRUIT_COUNT * 3) return;
 
   const pos = getRandomPosition();
   fruits.push(pos);
@@ -120,10 +127,10 @@ const pointsEqual = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 
 // Prevent reversing direction.
 const isOpposite = (d1: Direction, d2: Direction): boolean =>
-  (d1 === 'UP' && d2 === 'DOWN') ||
-  (d1 === 'DOWN' && d2 === 'UP') ||
-  (d1 === 'LEFT' && d2 === 'RIGHT') ||
-  (d1 === 'RIGHT' && d2 === 'LEFT');
+  (d1 === "UP" && d2 === "DOWN") ||
+  (d1 === "DOWN" && d2 === "UP") ||
+  (d1 === "LEFT" && d2 === "RIGHT") ||
+  (d1 === "RIGHT" && d2 === "LEFT");
 
 // --- Game Loop ---
 // Runs every TICK_RATE ms.
@@ -139,17 +146,20 @@ setInterval(() => {
     const player = players[id];
     const head = player.snake[0];
     let newHead: Point;
+    if (player.directionQueue.length > 0) {
+      player.direction = player.directionQueue.shift()!;
+    }
     switch (player.direction) {
-      case 'UP':
+      case "UP":
         newHead = { x: head.x, y: head.y - 1 };
         break;
-      case 'DOWN':
+      case "DOWN":
         newHead = { x: head.x, y: head.y + 1 };
         break;
-      case 'LEFT':
+      case "LEFT":
         newHead = { x: head.x - 1, y: head.y };
         break;
-      case 'RIGHT':
+      case "RIGHT":
       default:
         newHead = { x: head.x + 1, y: head.y };
         break;
@@ -167,7 +177,7 @@ setInterval(() => {
     } else {
       for (const otherId in currentSnakes) {
         const segments = currentSnakes[otherId];
-        if (segments.some(segment => pointsEqual(segment, newHead))) {
+        if (segments.some((segment) => pointsEqual(segment, newHead))) {
           collision = true;
           break;
         }
@@ -178,21 +188,21 @@ setInterval(() => {
       // Before respawning, turn ~25% of the snake’s body segments into fruits.
       for (const segment of player.snake) {
         if (Math.random() < 0.25) {
-          if (!fruits.some(fruit => pointsEqual(fruit, segment))) {
+          if (!fruits.some((fruit) => pointsEqual(fruit, segment))) {
             fruits.push({ ...segment });
           }
         }
       }
       // Respawn the player at a safe position with a small snake.
       const spawnPos = getSafeSpawnPosition();
-      player.direction = 'RIGHT';
+      player.direction = "RIGHT";
       player.snake = createSnake(spawnPos, player.direction);
       player.score = 0;
       continue;
     }
 
     // Check if the snake has eaten a fruit.
-    const fruitIndex = fruits.findIndex(fruit => pointsEqual(fruit, newHead));
+    const fruitIndex = fruits.findIndex((fruit) => pointsEqual(fruit, newHead));
     let grow = false;
     if (fruitIndex !== -1) {
       fruits.splice(fruitIndex, 1);
@@ -211,31 +221,45 @@ setInterval(() => {
   }
 
   // Broadcast the updated game state.
-  io.emit('gameState', { players, fruits, gridWidth: GRID_WIDTH, gridHeight: GRID_HEIGHT });
+  io.emit("gameState", {
+    players,
+    fruits,
+    gridWidth: GRID_WIDTH,
+    gridHeight: GRID_HEIGHT,
+  });
 }, TICK_RATE);
 
 // --- Socket.IO Handling ---
-io.on('connection', (socket) => {
-  console.log('New connection:', socket.id);
+io.on("connection", (socket) => {
+  console.log("New connection:", socket.id);
   const spawnPos = getSafeSpawnPosition();
   const newPlayer: Player = {
     id: socket.id,
-    snake: createSnake(spawnPos, 'RIGHT'),
-    direction: 'RIGHT',
+    snake: createSnake(spawnPos, "RIGHT"),
+    direction: "RIGHT",
     score: 0,
-    color: '#' + Math.floor(Math.random() * 16777215).toString(16)
+    color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+    directionQueue: [],
   };
   players[socket.id] = newPlayer;
 
   // Listen for direction changes from the client.
-  socket.on('changeDirection', (newDirection: Direction) => {
-    if (!isOpposite(players[socket.id].direction, newDirection)) {
-      players[socket.id].direction = newDirection;
+  socket.on("changeDirection", (newDirection: Direction) => {
+    let precedingDirection = players[socket.id].direction;
+    if (players[socket.id].directionQueue.length > 0)
+      precedingDirection =
+        players[socket.id].directionQueue[
+          players[socket.id].directionQueue.length - 1
+        ];
+
+    // just make sure the next direction doesn't conflict with the previous direction
+    if (!isOpposite(precedingDirection, newDirection)) {
+      players[socket.id].directionQueue.push(newDirection);
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log('Disconnect:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("Disconnect:", socket.id);
     delete players[socket.id];
   });
 });
@@ -243,7 +267,7 @@ io.on('connection', (socket) => {
 app.use(cors());
 
 // Optionally serve static files.
-app.use(express.static('public'));
+app.use(express.static("public"));
 
 // server client built files
 app.use(express.static("dist"));

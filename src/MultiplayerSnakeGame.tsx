@@ -164,7 +164,7 @@ const MultiplayerSnakeGame: React.FC = () => {
       );
     }
 
-    // Draw all players’ snakes.
+    // Draw all players' snakes.
     for (const id in gameState.players) {
       const player = gameState.players[id];
       // Blinking death animation: if dead and within 2 seconds, only draw on alternating frames.
@@ -191,7 +191,7 @@ const MultiplayerSnakeGame: React.FC = () => {
     }
   }, [gameState, canvasSize]);
 
-  // Find the current player’s score.
+  // Find the current player's score.
   const myScore =
     gameState && myId && gameState.players[myId]
       ? gameState.players[myId].score

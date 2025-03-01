@@ -18,6 +18,7 @@ interface Player {
   score: number;
   color: string;
   directionQueue: Direction[];
+  isAI?: boolean; // Flag to identify AI players
 }
 
 const app = express();
@@ -43,6 +44,7 @@ const INITIAL_FRUIT_COUNT = 20;
 // --- Game State ---
 const players: Record<string, Player> = {};
 const fruits: Point[] = [];
+let gameLoopInterval: NodeJS.Timeout | null = null;
 
 // --- Utility Functions ---
 const getRandomInt = (max: number) => Math.floor(Math.random() * max);
@@ -50,6 +52,14 @@ const getRandomPosition = (): Point => ({
   x: getRandomInt(GRID_WIDTH),
   y: getRandomInt(GRID_HEIGHT),
 });
+
+// Generate vibrant colors with HSL
+const generatePlayerColor = (): string => {
+  const hue = Math.floor(Math.random() * 360); // Random hue (0-359)
+  const saturation = 70 + Math.floor(Math.random() * 30); // High saturation (70-100%)
+  const lightness = 50 + Math.floor(Math.random() * 20); // Moderate to high lightness (50-70%)
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
 
 // Checks if a given point is occupied by any snake.
 const isPositionOccupied = (pos: Point): boolean => {
@@ -102,19 +112,22 @@ const createSnake = (start: Point, direction: Direction): Point[] => {
   return snake;
 };
 
-// Spawn a new fruit at a random location.
+// Spawn a new fruit at a random location with a random delay
 const spawnFruit = () => {
   // if too many fruits on the board, don't spawn more
   if (fruits.length >= INITIAL_FRUIT_COUNT * 3) return;
 
-  const pos = getRandomPosition();
-  fruits.push(pos);
-
-  // make sure there are at least the number of fruits as players
-  while (fruits.length < Object.keys(players).length) {
+  // Add random delay between 0-500ms for fruit spawning
+  setTimeout(() => {
     const pos = getRandomPosition();
     fruits.push(pos);
-  }
+
+    // make sure there are at least the number of fruits as players
+    while (fruits.length < Object.keys(players).length) {
+      const pos = getRandomPosition();
+      fruits.push(pos);
+    }
+  }, Math.random() * 500);
 };
 
 // Initially spawn several fruits.
@@ -132,9 +145,168 @@ const isOpposite = (d1: Direction, d2: Direction): boolean =>
   (d1 === "LEFT" && d2 === "RIGHT") ||
   (d1 === "RIGHT" && d2 === "LEFT");
 
-// --- Game Loop ---
-// Runs every TICK_RATE ms.
-setInterval(() => {
+// Calculate Manhattan distance between two points
+const manhattanDistance = (a: Point, b: Point): number => {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+};
+
+// AI decision making function
+const calculateAIMove = (playerId: string): Direction => {
+  const player = players[playerId];
+  if (!player) return "RIGHT"; // Default
+
+  const head = player.snake[0];
+  const currentDirection = player.direction;
+
+  // Available directions (excluding opposite direction)
+  const availableDirections: Direction[] = [
+    "UP" as const,
+    "DOWN" as const,
+    "LEFT" as const,
+    "RIGHT" as const,
+  ].filter((dir) => !isOpposite(currentDirection, dir));
+
+  // Calculate next positions for each direction
+  const nextPositions: Record<Direction, Point> = {
+    UP: { x: head.x, y: head.y - 1 },
+    DOWN: { x: head.x, y: head.y + 1 },
+    LEFT: { x: head.x - 1, y: head.y },
+    RIGHT: { x: head.x + 1, y: head.y },
+  };
+
+  // Filter out directions that lead to immediate collisions
+  const safeDirections = availableDirections.filter((dir) => {
+    const pos = nextPositions[dir];
+
+    // Check if out of bounds
+    if (pos.x < 0 || pos.x >= GRID_WIDTH || pos.y < 0 || pos.y >= GRID_HEIGHT) {
+      return false;
+    }
+
+    // Check if colliding with any snake
+    for (const id in players) {
+      const otherPlayer = players[id];
+      const segments = otherPlayer.snake;
+
+      if (segments.some((segment) => pointsEqual(segment, pos))) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // If no safe directions, just continue in the current direction
+  if (safeDirections.length === 0) {
+    return currentDirection;
+  }
+
+  // Find the nearest fruit and try to move towards it
+  let closestFruit: Point | null = null;
+  let closestDistance = Infinity;
+
+  for (const fruit of fruits) {
+    const distance = manhattanDistance(head, fruit);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestFruit = fruit;
+    }
+  }
+
+  if (closestFruit) {
+    // Score each safe direction by how much closer it gets to the fruit
+    const directionScores = safeDirections.map((dir) => {
+      const pos = nextPositions[dir];
+      const newDistance = manhattanDistance(pos, closestFruit!);
+      return { direction: dir, score: closestDistance - newDistance };
+    });
+
+    // Sort by score (descending)
+    directionScores.sort((a, b) => b.score - a.score);
+
+    // Return the direction with the highest score
+    return directionScores[0].direction;
+  }
+
+  // If no fruit is found, choose a random safe direction
+  return safeDirections[Math.floor(Math.random() * safeDirections.length)];
+};
+
+// Manage AI players based on human player count
+const manageAIPlayers = () => {
+  // Count human players
+  const humanPlayers = Object.values(players).filter((player) => !player.isAI);
+  const humanCount = humanPlayers.length;
+
+  // Count current AI players
+  const aiPlayers = Object.values(players).filter((player) => player.isAI);
+  const aiCount = aiPlayers.length;
+
+  // Determine target AI count
+  let targetAICount = 0;
+  if (humanCount === 1) targetAICount = 3;
+  else if (humanCount === 2) targetAICount = 2;
+  else if (humanCount === 3) targetAICount = 1;
+
+  // Add or remove AI players to reach target
+  if (aiCount < targetAICount) {
+    // Need to add AI players
+    for (let i = 0; i < targetAICount - aiCount; i++) {
+      addAIPlayer();
+    }
+  } else if (aiCount > targetAICount) {
+    // let current AI players just play out until they die
+    // Need to remove AI players
+    // const playersToRemove = aiPlayers.slice(0, aiCount - targetAICount);
+    // for (const player of playersToRemove) {
+    //   delete players[player.id];
+    // }
+  }
+};
+
+// Create a new AI player
+const addAIPlayer = () => {
+  const aiId = `ai-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const spawnPos = getSafeSpawnPosition();
+  const aiPlayer: Player = {
+    id: aiId,
+    snake: createSnake(spawnPos, "RIGHT"),
+    direction: "RIGHT",
+    score: 0,
+    color: generatePlayerColor(),
+    directionQueue: [],
+    isAI: true,
+  };
+
+  players[aiId] = aiPlayer;
+};
+
+// Start or stop the game loop based on player count
+const manageGameLoop = () => {
+  const playerCount = Object.keys(players).length;
+
+  if (playerCount > 0 && !gameLoopInterval) {
+    // Start the game loop if we have players but no active interval
+    gameLoopInterval = setInterval(gameLoop, TICK_RATE);
+    console.log("Game loop started");
+  } else if (playerCount === 0 && gameLoopInterval) {
+    // Stop the game loop if no players remain
+    clearInterval(gameLoopInterval);
+    gameLoopInterval = null;
+    console.log("Game loop stopped - no players");
+  }
+};
+
+// Game loop function
+const gameLoop = () => {
+  // First update AI player directions
+  for (const id in players) {
+    if (players[id].isAI) {
+      const aiDirection = calculateAIMove(id);
+      players[id].directionQueue = [aiDirection];
+    }
+  }
+
   // Save the current snake positions for collision detection.
   const currentSnakes: Record<string, Point[]> = {};
   for (const id in players) {
@@ -185,7 +357,7 @@ setInterval(() => {
     }
 
     if (collision) {
-      // Before respawning, turn ~25% of the snake’s body segments into fruits.
+      // Before respawning, turn ~25% of the snake's body segments into fruits.
       for (const segment of player.snake) {
         if (Math.random() < 0.25) {
           if (!fruits.some((fruit) => pointsEqual(fruit, segment))) {
@@ -227,7 +399,7 @@ setInterval(() => {
     gridWidth: GRID_WIDTH,
     gridHeight: GRID_HEIGHT,
   });
-}, TICK_RATE);
+};
 
 // --- Socket.IO Handling ---
 io.on("connection", (socket) => {
@@ -238,13 +410,19 @@ io.on("connection", (socket) => {
     snake: createSnake(spawnPos, "RIGHT"),
     direction: "RIGHT",
     score: 0,
-    color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+    color: generatePlayerColor(),
     directionQueue: [],
   };
   players[socket.id] = newPlayer;
 
+  // Update AI players and manage game loop after player joins
+  manageAIPlayers();
+  manageGameLoop();
+
   // Listen for direction changes from the client.
   socket.on("changeDirection", (newDirection: Direction) => {
+    if (!players[socket.id]) return;
+
     let precedingDirection = players[socket.id].direction;
     if (players[socket.id].directionQueue.length > 0)
       precedingDirection =
@@ -261,6 +439,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Disconnect:", socket.id);
     delete players[socket.id];
+
+    // Update AI players and manage game loop after player leaves
+    manageAIPlayers();
+    manageGameLoop();
   });
 });
 

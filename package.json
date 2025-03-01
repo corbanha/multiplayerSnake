@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
-    "server": "nodemon --watch 'src/**/' --exec 'npx tsx src/server.ts'",
+    "server": "nodemon --watch 'src/server.ts' --exec 'npx tsx src/server.ts'",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

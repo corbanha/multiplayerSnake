@@ -201,35 +201,120 @@ const calculateAIMove = (playerId: string): Direction => {
     return currentDirection;
   }
 
-  // Find the nearest fruit and try to move towards it
+  // Calculate how much space is available after moving in each direction
+  // This helps avoid getting trapped in tight spaces
+  const directionScores = safeDirections.map((dir) => {
+    const pos = nextPositions[dir];
+
+    // Base score starts with available free spaces
+    let score = countAccessibleSpaces(pos, player.snake);
+
+    // Bonus for moving toward fruit
+    const closestFruit = findClosestFruit(head);
+    if (closestFruit) {
+      const currentDistance = manhattanDistance(head, closestFruit);
+      const newDistance = manhattanDistance(pos, closestFruit);
+
+      // If this move gets us closer to the fruit, add bonus
+      if (newDistance < currentDistance) {
+        score += 5;
+      }
+    }
+
+    return { direction: dir, score };
+  });
+
+  // Sort by score (descending)
+  directionScores.sort((a, b) => b.score - a.score);
+
+  // Return the direction with the highest score
+  return directionScores[0].direction;
+};
+
+// Find the closest fruit from a point
+const findClosestFruit = (from: Point): Point | null => {
   let closestFruit: Point | null = null;
   let closestDistance = Infinity;
 
   for (const fruit of fruits) {
-    const distance = manhattanDistance(head, fruit);
+    const distance = manhattanDistance(from, fruit);
     if (distance < closestDistance) {
       closestDistance = distance;
       closestFruit = fruit;
     }
   }
 
-  if (closestFruit) {
-    // Score each safe direction by how much closer it gets to the fruit
-    const directionScores = safeDirections.map((dir) => {
-      const pos = nextPositions[dir];
-      const newDistance = manhattanDistance(pos, closestFruit!);
-      return { direction: dir, score: closestDistance - newDistance };
-    });
+  return closestFruit;
+};
 
-    // Sort by score (descending)
-    directionScores.sort((a, b) => b.score - a.score);
+// Count accessible spaces from a position using flood fill
+// This helps the AI avoid trapping itself
+const countAccessibleSpaces = (start: Point, snakeBody: Point[]): number => {
+  // Create a set to track visited positions
+  const visited = new Set<string>();
 
-    // Return the direction with the highest score
-    return directionScores[0].direction;
+  // Add snake body segments to visited (can't go there)
+  snakeBody.forEach((segment) => {
+    visited.add(`${segment.x},${segment.y}`);
+  });
+
+  // Add the starting point
+  const queue: Point[] = [start];
+  visited.add(`${start.x},${start.y}`);
+
+  // Count accessible spaces (limited to prevent excessive computation)
+  let count = 0;
+  const maxExplore = 100; // Limit exploration to avoid performance issues
+
+  while (queue.length > 0 && count < maxExplore) {
+    const current = queue.shift()!;
+    count++;
+
+    // Check all four adjacent positions
+    const neighbors = [
+      { x: current.x, y: current.y - 1 }, // up
+      { x: current.x, y: current.y + 1 }, // down
+      { x: current.x - 1, y: current.y }, // left
+      { x: current.x + 1, y: current.y }, // right
+    ];
+
+    for (const neighbor of neighbors) {
+      const key = `${neighbor.x},${neighbor.y}`;
+
+      // Skip if already visited, out of bounds, or occupied by a snake
+      if (
+        visited.has(key) ||
+        neighbor.x < 0 ||
+        neighbor.x >= GRID_WIDTH ||
+        neighbor.y < 0 ||
+        neighbor.y >= GRID_HEIGHT
+      ) {
+        continue;
+      }
+
+      // For other players' snakes
+      let isOccupied = false;
+      for (const id in players) {
+        if (
+          players[id].snake.some(
+            (segment) => segment.x === neighbor.x && segment.y === neighbor.y
+          )
+        ) {
+          isOccupied = true;
+          break;
+        }
+      }
+
+      if (isOccupied) {
+        continue;
+      }
+
+      visited.add(key);
+      queue.push(neighbor);
+    }
   }
 
-  // If no fruit is found, choose a random safe direction
-  return safeDirections[Math.floor(Math.random() * safeDirections.length)];
+  return count;
 };
 
 // Manage AI players based on human player count

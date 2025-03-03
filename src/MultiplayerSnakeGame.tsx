@@ -352,23 +352,6 @@ const MultiplayerSnakeGame: React.FC = () => {
 
   return (
     <div>
-      {/* Current player's score at the top center */}
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: "50%",
-          transform: "translateX(-50%)",
-          color:
-            gameState && myId && gameState.players[myId]
-              ? gameState.players[myId].color
-              : "white",
-          zIndex: 2,
-          fontSize: "24px",
-        }}
-      >
-        Score: {myScore}
-      </div>
       {/* Highscore board at the top right */}
       <div
         ref={highscoreBoardRef}
@@ -381,7 +364,7 @@ const MultiplayerSnakeGame: React.FC = () => {
           borderRadius: "8px",
           color: "white",
           zIndex: 2,
-          fontSize: "16px",
+          fontSize: "18px",
           opacity: boardOpacity,
           transition: "opacity 0.2s",
         }}
@@ -394,14 +377,22 @@ const MultiplayerSnakeGame: React.FC = () => {
             <span
               style={{
                 display: "inline-block",
-                width: "12px",
-                height: "12px",
+                width: "14px",
+                height: "14px",
                 background: player.color,
                 marginRight: "5px",
               }}
             ></span>
-            {player.score}
-            {player.isAI ? " (AI)" : ""}
+            <span
+              style={{
+                fontWeight: player.id === myId ? "bold" : "normal",
+                color: player.id === myId ? "#FFFFFF" : "inherit",
+              }}
+            >
+              {player.score}
+              {player.isAI ? " (AI)" : ""}
+              {player.id === myId ? " (You)" : ""}
+            </span>
           </div>
         ))}
       </div>

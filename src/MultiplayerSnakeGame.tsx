@@ -1,5 +1,5 @@
 // MultiplayerSnakeGame.tsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import io, { Socket } from "socket.io-client";
 
 interface Point {
@@ -17,6 +17,7 @@ interface Player {
   dead?: boolean;
   deathTimestamp?: number;
   designStyle: 1 | 2 | 3 | 4;
+  direction: Direction;
 }
 
 interface GameState {

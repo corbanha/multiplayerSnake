@@ -347,12 +347,6 @@ const MultiplayerSnakeGame: React.FC = () => {
     }
   }, [gameState, canvasSize, myId, joinedAt]);
 
-  // Find the current player's score.
-  const myScore =
-    gameState && myId && gameState.players[myId]
-      ? gameState.players[myId].score
-      : 0;
-
   // Prepare sorted high scores for display.
   const sortedScores =
     gameState && gameState.players

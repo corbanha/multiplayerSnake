@@ -172,15 +172,24 @@ const MultiplayerSnakeGame: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!socket) return;
+
+      // Handle direction changes
       let newDirection: Direction | null = null;
       if (e.key === "ArrowUp") newDirection = "UP";
       else if (e.key === "ArrowDown") newDirection = "DOWN";
       else if (e.key === "ArrowLeft") newDirection = "LEFT";
       else if (e.key === "ArrowRight") newDirection = "RIGHT";
+
       if (newDirection) {
         socket.emit("changeDirection", newDirection);
       }
+
+      // Handle color change with 'c' key
+      if (e.key === "c" || e.key === "C") {
+        socket.emit("changeAppearance");
+      }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [socket]);

@@ -690,6 +690,23 @@ io.on("connection", (socket) => {
     manageAIPlayers();
     manageGameLoop();
   });
+
+  // Add this to the socket.io connection handler section
+  socket.on("changeAppearance", () => {
+    if (!players[socket.id]) return;
+
+    // Generate a new color that's distinct from other players
+    const newColor = generatePlayerColor();
+
+    // Choose a new random design style
+    const newDesignStyle = (Math.floor(Math.random() * 4) + 1) as 1 | 2 | 3 | 4;
+
+    // Update the player's appearance
+    players[socket.id].color = newColor;
+    players[socket.id].designStyle = newDesignStyle;
+
+    // No need to emit anything here as the game state is sent regularly
+  });
 });
 
 app.use(cors());

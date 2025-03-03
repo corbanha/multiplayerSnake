@@ -368,19 +368,29 @@ const addAIPlayer = () => {
   players[aiId] = aiPlayer;
 };
 
-// Start or stop the game loop based on player count
+// Start or stop the game loop based on human player count
 const manageGameLoop = () => {
-  const playerCount = Object.keys(players).length;
+  // Count human players (non-AI players)
+  const humanPlayerCount = Object.values(players).filter(
+    (player) => !player.isAI
+  ).length;
 
-  if (playerCount > 0 && !gameLoopInterval) {
-    // Start the game loop if we have players but no active interval
+  if (humanPlayerCount > 0 && !gameLoopInterval) {
+    // Start the game loop if we have human players but no active interval
     gameLoopInterval = setInterval(gameLoop, TICK_RATE);
-    console.log("Game loop started");
-  } else if (playerCount === 0 && gameLoopInterval) {
-    // Stop the game loop if no players remain
+    console.log("Game loop started - human players present");
+  } else if (humanPlayerCount === 0 && gameLoopInterval) {
+    // Stop the game loop if no human players remain
     clearInterval(gameLoopInterval);
     gameLoopInterval = null;
-    console.log("Game loop stopped - no players");
+    console.log("Game loop stopped - no human players");
+
+    // Optional: Clear AI players when no humans are present
+    // This will remove all AI players when the game pauses
+    const aiPlayerIds = Object.keys(players).filter((id) => players[id].isAI);
+    for (const id of aiPlayerIds) {
+      delete players[id];
+    }
   }
 };
 

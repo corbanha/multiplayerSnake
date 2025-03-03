@@ -19,7 +19,7 @@ interface Player {
   color: string;
   directionQueue: Direction[];
   isAI?: boolean; // Flag to identify AI players
-  designStyle: 1 | 2 | 3 | 4; // New property for snake visual style
+  designStyle: 1 | 2 | 3 | 4 | 5; // New property for snake visual style
 }
 
 const app = express();
@@ -471,7 +471,7 @@ const addAIPlayer = () => {
     color: generatePlayerColor(),
     directionQueue: [],
     isAI: true,
-    designStyle: (Math.floor(Math.random() * 4) + 1) as 1 | 2 | 3 | 4,
+    designStyle: (Math.floor(Math.random() * 5) + 1) as 1 | 2 | 3 | 4 | 5,
   };
 
   players[aiId] = aiPlayer;
@@ -657,7 +657,7 @@ io.on("connection", (socket) => {
     score: 0,
     color: generatePlayerColor(),
     directionQueue: [],
-    designStyle: (Math.floor(Math.random() * 4) + 1) as 1 | 2 | 3 | 4,
+    designStyle: (Math.floor(Math.random() * 5) + 1) as 1 | 2 | 3 | 4 | 5,
   };
   players[socket.id] = newPlayer;
 

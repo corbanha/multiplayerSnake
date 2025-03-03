@@ -16,7 +16,7 @@ interface Player {
   isAI?: boolean;
   dead?: boolean;
   deathTimestamp?: number;
-  designStyle: 1 | 2 | 3 | 4;
+  designStyle: 1 | 2 | 3 | 4 | 5;
   direction: Direction;
 }
 
@@ -90,6 +90,7 @@ const getBlendedColor = (
 const getSegmentColor = (player: Player, segmentIndex: number): string => {
   const baseColor = player.color;
   const position = segmentIndex % 10; // 10 segments in a full cycle
+  const oppositeColor = getOppositeColor(baseColor);
 
   switch (player.designStyle) {
     case 1: // Style 1: Alternating between normal and dark
@@ -111,13 +112,14 @@ const getSegmentColor = (player: Player, segmentIndex: number): string => {
 
     case 4:
       // choose another color that is opposite of the base color but with same lightness
-      const oppositeColor = getOppositeColor(baseColor);
       const snakeLength = player.snake.length;
       const blend = segmentIndex / snakeLength;
 
       // const blend = position < 5 ? position / 5 : (9 - position) / 5;
       return getBlendedColor(baseColor, oppositeColor, blend);
 
+    case 5:
+      return segmentIndex % 6 === 0 ? oppositeColor : baseColor;
     default:
       return baseColor;
   }

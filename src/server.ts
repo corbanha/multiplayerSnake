@@ -54,12 +54,121 @@ const getRandomPosition = (): Point => ({
   y: getRandomInt(GRID_HEIGHT),
 });
 
-// Generate vibrant colors with HSL
+// Color utility functions
+const hslDistance = (color1: string, color2: string): number => {
+  // Extract HSL values from both colors
+  const color1Match = color1.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  const color2Match = color2.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+
+  if (!color1Match || !color2Match) return 1000; // Return large distance if formats don't match
+
+  // Parse HSL values
+  const h1 = parseInt(color1Match[1]);
+  const s1 = parseInt(color1Match[2]);
+  const l1 = parseInt(color1Match[3]);
+
+  const h2 = parseInt(color2Match[1]);
+  const s2 = parseInt(color2Match[2]);
+  const l2 = parseInt(color2Match[3]);
+
+  // Calculate hue distance (accounting for the circular nature of hue)
+  let hueDist = Math.min(Math.abs(h1 - h2), 360 - Math.abs(h1 - h2));
+  // Normalize to 0-1 range
+  hueDist /= 180;
+
+  // Calculate saturation and lightness distances (normalized to 0-1)
+  const satDist = Math.abs(s1 - s2) / 100;
+  const lightDist = Math.abs(l1 - l2) / 100;
+
+  // Weight hue more heavily in the distance calculation
+  return hueDist * 0.8 + satDist * 0.1 + lightDist * 0.1;
+};
+
+// Generate vibrant colors with HSL that aren't too similar to existing colors
 const generatePlayerColor = (): string => {
-  const hue = Math.floor(Math.random() * 360); // Random hue (0-359)
-  const saturation = 70 + Math.floor(Math.random() * 30); // High saturation (70-100%)
-  const lightness = 50 + Math.floor(Math.random() * 20); // Moderate to high lightness (50-70%)
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  const MIN_COLOR_DISTANCE = 0.2; // Minimum "distance" between colors (0-1 scale)
+  const ATTEMPT_LIMIT = 20; // Maximum attempts to find a unique color
+
+  let attempts = 0;
+  let bestColor = "";
+  let bestDistance = 0;
+
+  // Get all existing player colors
+  const existingColors = Object.values(players).map((player) => player.color);
+
+  // If there are no existing players, just return a random color
+  if (existingColors.length === 0) {
+    const hue = Math.floor(Math.random() * 360); // Random hue (0-359)
+    const saturation = 70 + Math.floor(Math.random() * 30); // High saturation (70-100%)
+    const lightness = 50 + Math.floor(Math.random() * 20); // Moderate to high lightness (50-70%)
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }
+
+  // Try to find a color with sufficient distance from all existing colors
+  while (attempts < ATTEMPT_LIMIT) {
+    // Generate a random color
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 70 + Math.floor(Math.random() * 30);
+    const lightness = 50 + Math.floor(Math.random() * 20);
+    const newColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+    // Calculate minimum distance to any existing color
+    let minDistance = 1.0;
+    for (const existingColor of existingColors) {
+      const distance = hslDistance(newColor, existingColor);
+      minDistance = Math.min(minDistance, distance);
+    }
+
+    // If we found a color with sufficient distance, return it
+    if (minDistance >= MIN_COLOR_DISTANCE) {
+      return newColor;
+    }
+
+    // Otherwise, keep track of the best color so far
+    if (minDistance > bestDistance) {
+      bestDistance = minDistance;
+      bestColor = newColor;
+    }
+
+    attempts++;
+  }
+
+  // If we couldn't find an ideal color after several attempts,
+  // return the best one we found
+  if (bestColor) {
+    return bestColor;
+  }
+
+  // Fallback: generate a color with maximum separation from existing colors
+  // by dividing the color wheel into sections
+  const existingHues = existingColors
+    .map((color) => {
+      const match = color.match(/hsl\((\d+),/);
+      return match ? parseInt(match[1]) : 0;
+    })
+    .sort((a, b) => a - b);
+
+  // Find the largest gap in existing hues
+  let largestGap = 0;
+  let gapStart = 0;
+
+  for (let i = 0; i < existingHues.length; i++) {
+    const nextIndex = (i + 1) % existingHues.length;
+    let gap = existingHues[nextIndex] - existingHues[i];
+    if (gap < 0) gap += 360; // Handle wrapping around the circle
+
+    if (gap > largestGap) {
+      largestGap = gap;
+      gapStart = existingHues[i];
+    }
+  }
+
+  // Place the new hue in the middle of the largest gap
+  const newHue = Math.floor((gapStart + largestGap / 2) % 360);
+  const saturation = 70 + Math.floor(Math.random() * 30);
+  const lightness = 50 + Math.floor(Math.random() * 20);
+
+  return `hsl(${newHue}, ${saturation}%, ${lightness}%)`;
 };
 
 // Checks if a given point is occupied by any snake.

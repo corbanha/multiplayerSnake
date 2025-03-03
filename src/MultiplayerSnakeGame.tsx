@@ -129,6 +129,7 @@ const MultiplayerSnakeGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const highscoreBoardRef = useRef<HTMLDivElement | null>(null);
   const [boardOpacity, setBoardOpacity] = useState(1);
+  const [joinedAt, setJoinedAt] = useState<number | null>(null); // Track when the current player joined
 
   // Connect to the Socket.IO server.
   useEffect(() => {
@@ -143,6 +144,7 @@ const MultiplayerSnakeGame: React.FC = () => {
     newSocket.on("connect", () => {
       if (!newSocket.id) return;
       setMyId(newSocket.id);
+      setJoinedAt(Date.now()); // Set joinedAt when the player connects
     });
 
     newSocket.on("connect_error", (error: any) => {
@@ -285,8 +287,56 @@ const MultiplayerSnakeGame: React.FC = () => {
           cellHeight
         );
       });
+
+      // Draw indicator circle ONLY for the current player's snake
+      if (id === myId && joinedAt) {
+        const timeElapsed = Date.now() - joinedAt;
+        const INDICATOR_DURATION = 15000; // 15 seconds in milliseconds
+
+        if (timeElapsed < INDICATOR_DURATION) {
+          const head = player.snake[0];
+
+          // Calculate opacity: start with 1.0 (fully opaque) and fade out in the last 5 seconds
+          let opacity = 1.0;
+          if (timeElapsed > INDICATOR_DURATION - 5000) {
+            // Linear fade out in the last 5 seconds
+            opacity = (INDICATOR_DURATION - timeElapsed) / 5000;
+          }
+
+          // Draw red circle around the snake's head
+          ctx.beginPath();
+          ctx.arc(
+            head.x * cellWidth + cellWidth / 2, // x center
+            head.y * cellHeight + cellHeight / 2, // y center
+            Math.max(cellWidth, cellHeight) * 2, // radius slightly larger than the cell
+            0, // start angle
+            Math.PI * 2 // end angle (full circle)
+          );
+          ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        } else if (timeElapsed < INDICATOR_DURATION * 2) {
+          // Calculate opacity for second 15 seconds: fade from 1.0 to 0.0
+          const opacity =
+            (INDICATOR_DURATION * 2 - timeElapsed) / INDICATOR_DURATION;
+
+          // Draw red circle around the snake's head with fading opacity
+          const head = player.snake[0];
+          ctx.beginPath();
+          ctx.arc(
+            head.x * cellWidth + cellWidth / 2,
+            head.y * cellHeight + cellHeight / 2,
+            Math.max(cellWidth, cellHeight) * 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        }
+      }
     }
-  }, [gameState, canvasSize]);
+  }, [gameState, canvasSize, myId, joinedAt]);
 
   // Find the current player's score.
   const myScore =

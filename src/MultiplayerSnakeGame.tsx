@@ -16,6 +16,7 @@ interface Player {
   isAI?: boolean;
   dead?: boolean;
   deathTimestamp?: number;
+  designStyle: 1 | 2 | 3;
 }
 
 interface GameState {
@@ -26,6 +27,52 @@ interface GameState {
 }
 
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
+
+// Helper function to darken a color
+const darkenColor = (color: string, amount: number): string => {
+  // For HSL colors
+  if (color.startsWith("hsl")) {
+    const match = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (match) {
+      const h = parseInt(match[1]);
+      const s = parseInt(match[2]);
+      const l = Math.max(parseInt(match[3]) - amount, 0); // Reduce lightness, but not below 0
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+  }
+
+  // Fallback for other color formats (hex, rgb, etc.)
+  return color;
+};
+
+// Function to get segment color based on design style
+const getSegmentColor = (player: Player, segmentIndex: number): string => {
+  const baseColor = player.color;
+
+  console.log(player.designStyle);
+  switch (player.designStyle) {
+    case 1: // Style 1: Alternating between normal and dark
+      return segmentIndex % 2 === 0 ? baseColor : darkenColor(baseColor, 30);
+
+    case 2: // Style 2: Gradient pattern (light → dark → light)
+      // 5-segment cycle: 0,1,2,3,4 where 0 is lightest and 4 is darkest
+      const position = segmentIndex % 10; // 10 segments in a full cycle
+      const darkening =
+        position < 5
+          ? position * 10 // Gradually darken for first 5 segments (0-40)
+          : (9 - position) * 10; // Gradually lighten for next 5 segments (40-0)
+      return darkenColor(baseColor, darkening);
+
+    case 3: // Style 3: Color, darker, darkest pattern
+      const patternPosition = segmentIndex % 3;
+      if (patternPosition === 0) return baseColor;
+      if (patternPosition === 1) return darkenColor(baseColor, 20);
+      return darkenColor(baseColor, 40); // darkest
+
+    default:
+      return baseColor;
+  }
+};
 
 const MultiplayerSnakeGame: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -179,8 +226,10 @@ const MultiplayerSnakeGame: React.FC = () => {
           continue;
         }
       }
-      ctx.fillStyle = player.color;
-      player.snake.forEach((segment) => {
+
+      // Draw each segment with the proper color based on design style
+      player.snake.forEach((segment, index) => {
+        ctx.fillStyle = getSegmentColor(player, index);
         ctx.fillRect(
           segment.x * cellWidth,
           segment.y * cellHeight,

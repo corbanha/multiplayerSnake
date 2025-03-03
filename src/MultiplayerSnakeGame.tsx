@@ -16,7 +16,7 @@ interface Player {
   isAI?: boolean;
   dead?: boolean;
   deathTimestamp?: number;
-  designStyle: 1 | 2 | 3;
+  designStyle: 1 | 2 | 3 | 4;
 }
 
 interface GameState {
@@ -45,18 +45,57 @@ const darkenColor = (color: string, amount: number): string => {
   return color;
 };
 
-// Function to get segment color based on design style
+// Function to get the opposite color
+const getOppositeColor = (color: string): string => {
+  const hsl = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  if (!hsl) return color;
+  const h = parseInt(hsl[1]);
+  const s = parseInt(hsl[2]);
+  const l = parseInt(hsl[3]);
+  return `hsl(${(h + 180) % 360}, ${s}%, ${l}%)`;
+};
+
+// Function to blend two HSL colors based on a ratio
+const getBlendedColor = (
+  color1: string,
+  color2: string,
+  ratio: number
+): string => {
+  // Extract HSL values from both colors
+  const color1Match = color1.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+  const color2Match = color2.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+
+  if (!color1Match || !color2Match) return color1;
+
+  // Parse HSL values
+  const h1 = parseInt(color1Match[1]);
+  const s1 = parseInt(color1Match[2]);
+  const l1 = parseInt(color1Match[3]);
+
+  const h2 = parseInt(color2Match[1]);
+  const s2 = parseInt(color2Match[2]);
+  const l2 = parseInt(color2Match[3]);
+
+  // Ensure ratio is between 0 and 1
+  const blend = Math.max(0, Math.min(1, ratio));
+
+  // Blend each component
+  const h = h1 + (h2 - h1) * blend;
+  const s = s1 + (s2 - s1) * blend;
+  const l = l1 + (l2 - l1) * blend;
+
+  return `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`;
+};
 const getSegmentColor = (player: Player, segmentIndex: number): string => {
   const baseColor = player.color;
+  const position = segmentIndex % 10; // 10 segments in a full cycle
 
-  console.log(player.designStyle);
   switch (player.designStyle) {
     case 1: // Style 1: Alternating between normal and dark
-      return segmentIndex % 2 === 0 ? baseColor : darkenColor(baseColor, 30);
+      return segmentIndex % 2 === 0 ? baseColor : darkenColor(baseColor, 15);
 
     case 2: // Style 2: Gradient pattern (light → dark → light)
       // 5-segment cycle: 0,1,2,3,4 where 0 is lightest and 4 is darkest
-      const position = segmentIndex % 10; // 10 segments in a full cycle
       const darkening =
         position < 5
           ? position * 10 // Gradually darken for first 5 segments (0-40)
@@ -66,8 +105,17 @@ const getSegmentColor = (player: Player, segmentIndex: number): string => {
     case 3: // Style 3: Color, darker, darkest pattern
       const patternPosition = segmentIndex % 3;
       if (patternPosition === 0) return baseColor;
-      if (patternPosition === 1) return darkenColor(baseColor, 20);
-      return darkenColor(baseColor, 40); // darkest
+      if (patternPosition === 1) return darkenColor(baseColor, 15);
+      return darkenColor(baseColor, 30); // darkest
+
+    case 4:
+      // choose another color that is opposite of the base color but with same lightness
+      const oppositeColor = getOppositeColor(baseColor);
+      const snakeLength = player.snake.length;
+      const blend = segmentIndex / snakeLength;
+
+      // const blend = position < 5 ? position / 5 : (9 - position) / 5;
+      return getBlendedColor(baseColor, oppositeColor, blend);
 
     default:
       return baseColor;

@@ -19,7 +19,7 @@ interface Player {
   color: string;
   directionQueue: Direction[];
   isAI?: boolean; // Flag to identify AI players
-  designStyle: 1 | 2 | 3; // New property for snake visual style
+  designStyle: 1 | 2 | 3 | 4; // New property for snake visual style
 }
 
 const app = express();
@@ -362,7 +362,7 @@ const addAIPlayer = () => {
     color: generatePlayerColor(),
     directionQueue: [],
     isAI: true,
-    designStyle: (Math.floor(Math.random() * 3) + 1) as 1 | 2 | 3, // Random style 1-3
+    designStyle: (Math.floor(Math.random() * 4) + 1) as 1 | 2 | 3 | 4,
   };
 
   players[aiId] = aiPlayer;
@@ -397,8 +397,11 @@ const gameLoop = () => {
   // Save the current snake positions for collision detection.
   const currentSnakes: Record<string, Point[]> = {};
   for (const id in players) {
-    currentSnakes[id] = players[id].snake;
+    currentSnakes[id] = [...players[id].snake]; // Make a copy
   }
+
+  // Track new head positions to prevent overlaps
+  const newHeadPositions: Record<string, Point> = {};
 
   // Process each player.
   for (const id in players) {
@@ -426,6 +429,8 @@ const gameLoop = () => {
 
     // Check for collisions: with the walls or any snake segment.
     let collision = false;
+
+    // Check wall collisions
     if (
       newHead.x < 0 ||
       newHead.x >= GRID_WIDTH ||
@@ -434,10 +439,41 @@ const gameLoop = () => {
     ) {
       collision = true;
     } else {
+      // Check collisions with existing snake segments
       for (const otherId in currentSnakes) {
         const segments = currentSnakes[otherId];
         if (segments.some((segment) => pointsEqual(segment, newHead))) {
           collision = true;
+          break;
+        }
+      }
+
+      // Also check collision with other snakes' new head positions
+      for (const otherId in newHeadPositions) {
+        if (otherId !== id && pointsEqual(newHeadPositions[otherId], newHead)) {
+          // Head-to-head collision - both snakes should collide
+          collision = true;
+
+          // Also mark the other snake as collided by triggering a respawn
+          if (players[otherId]) {
+            // Turn segments into fruits
+            for (const segment of players[otherId].snake) {
+              if (Math.random() < 0.25) {
+                if (!fruits.some((fruit) => pointsEqual(fruit, segment))) {
+                  fruits.push({ ...segment });
+                }
+              }
+            }
+
+            // Respawn the other snake
+            const spawnPos = getSafeSpawnPosition();
+            players[otherId].direction = "RIGHT";
+            players[otherId].snake = createSnake(
+              spawnPos,
+              players[otherId].direction
+            );
+            players[otherId].score = 0;
+          }
           break;
         }
       }
@@ -459,6 +495,9 @@ const gameLoop = () => {
       player.score = 0;
       continue;
     }
+
+    // Store the new head position for collision detection with subsequent snakes
+    newHeadPositions[id] = newHead;
 
     // Check if the snake has eaten a fruit.
     const fruitIndex = fruits.findIndex((fruit) => pointsEqual(fruit, newHead));
@@ -499,7 +538,7 @@ io.on("connection", (socket) => {
     score: 0,
     color: generatePlayerColor(),
     directionQueue: [],
-    designStyle: (Math.floor(Math.random() * 3) + 1) as 1 | 2 | 3, // Random style 1-3
+    designStyle: (Math.floor(Math.random() * 4) + 1) as 1 | 2 | 3 | 4,
   };
   players[socket.id] = newPlayer;
 

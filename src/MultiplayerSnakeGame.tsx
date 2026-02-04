@@ -60,7 +60,7 @@ const getOppositeColor = (color: string): string => {
 const getBlendedColor = (
   color1: string,
   color2: string,
-  ratio: number
+  ratio: number,
 ): string => {
   // Extract HSL values from both colors
   const color1Match = color1.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
@@ -137,11 +137,7 @@ const MultiplayerSnakeGame: React.FC = () => {
   // Connect to the Socket.IO server.
   useEffect(() => {
     console.log("Connecting to server!");
-    const newSocket = io(
-      process.env.SERVER_PORT
-        ? `https://mentalkoolaid.com`
-        : "http://localhost:3001"
-    );
+    const newSocket = io("https://googlyeyes.app");
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
@@ -214,7 +210,7 @@ const MultiplayerSnakeGame: React.FC = () => {
   useEffect(() => {
     if (!socket || !gameState) return;
     const humanPlayers = Object.values(gameState.players).filter(
-      (player) => !player.isAI
+      (player) => !player.isAI,
     );
     let desiredAICount = 0;
     if (humanPlayers.length === 1) desiredAICount = 3;
@@ -269,7 +265,7 @@ const MultiplayerSnakeGame: React.FC = () => {
         fruit.x * cellWidth,
         fruit.y * cellHeight,
         cellWidth,
-        cellHeight
+        cellHeight,
       );
     }
 
@@ -296,7 +292,7 @@ const MultiplayerSnakeGame: React.FC = () => {
           segment.x * cellWidth,
           segment.y * cellHeight,
           cellWidth,
-          cellHeight
+          cellHeight,
         );
       });
 
@@ -322,7 +318,7 @@ const MultiplayerSnakeGame: React.FC = () => {
             head.y * cellHeight + cellHeight / 2, // y center
             Math.max(cellWidth, cellHeight) * 2, // radius slightly larger than the cell
             0, // start angle
-            Math.PI * 2 // end angle (full circle)
+            Math.PI * 2, // end angle (full circle)
           );
           ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
           ctx.lineWidth = 4;
@@ -340,7 +336,7 @@ const MultiplayerSnakeGame: React.FC = () => {
             head.y * cellHeight + cellHeight / 2,
             Math.max(cellWidth, cellHeight) * 2,
             0,
-            Math.PI * 2
+            Math.PI * 2,
           );
           ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
           ctx.lineWidth = 4;

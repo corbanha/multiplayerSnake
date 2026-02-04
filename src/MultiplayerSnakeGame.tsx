@@ -137,7 +137,7 @@ const MultiplayerSnakeGame: React.FC = () => {
   // Connect to the Socket.IO server.
   useEffect(() => {
     console.log("Connecting to server!");
-    const newSocket = io("https://googlyeyes.app");
+    const newSocket = io(process.env.SEVER_URL);
     setSocket(newSocket);
 
     newSocket.on("connect", () => {

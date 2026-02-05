@@ -19,12 +19,13 @@ jobs:
           cd /opt/snakeGame/multiplayerSnake
           git pull origin main
           npm install
+          rm -rf ./dist
           npm run build
-          sudo systemctl restart snakegame.service
+          
           # Copy static export to static export directory
           mkdir -p /var/www/googlyeyes
           rm -rf /var/www/googlyeyes/*
           cp -r dist/* /var/www/googlyeyes/
 
-
+          sudo systemctl reload nginx
           sudo systemctl restart snakegame.service

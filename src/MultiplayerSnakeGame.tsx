@@ -136,8 +136,8 @@ const MultiplayerSnakeGame: React.FC = () => {
 
   // Connect to the Socket.IO server.
   useEffect(() => {
-    console.log("Connecting to server!");
-    const newSocket = io(process.env.SEVER_URL);
+    console.log("Connecting to server! Server url: " + process.env.SERVER_URL);
+    const newSocket = io(process.env.SERVER_URL);
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
@@ -402,7 +402,7 @@ const MultiplayerSnakeGame: React.FC = () => {
         ref={canvasRef}
         width={canvasSize.width}
         height={canvasSize.height}
-        style={{ display: "block", background: "black" }}
+        style={{ display: "block", background: "blue" }}
       />
     </div>
   );

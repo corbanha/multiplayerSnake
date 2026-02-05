@@ -21,5 +21,7 @@ jobs:
           npm install
           npm run build
           sudo systemctl restart snakegame.service
-          # If using static export, also copy to nginx directory
-          # sudo cp -r out/* /var/www/yoursite/out/
+          # Copy static export to static export directory
+          sudo mkdir -p /var/www/googlyeyes
+          sudo rm -rf /var/www/googlyeyes/*
+          sudo cp -r dist/* /var/www/googlyeyes/

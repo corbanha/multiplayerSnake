@@ -1,0 +1,25 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /opt/snakeGame/multiplayerSnake
+          git pull origin main
+          npm install
+          npm run build
+          sudo systemctl restart snakegame.service
+          # If using static export, also copy to nginx directory
+          # sudo cp -r out/* /var/www/yoursite/out/
